@@ -3,13 +3,17 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Personal Health Record API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: dashboard
+    description: Patient overview
+  - name: records
+    description: Patient clinical records
 paths:
   /healthz:
     get:
@@ -24,7 +28,222 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /me:
+    get:
+      operationId: getCurrentUser
+      tags: [dashboard]
+      summary: Get the current patient profile
+      responses:
+        "200":
+          description: Current patient
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PatientProfile"
+  /dashboard:
+    get:
+      operationId: getDashboard
+      tags: [dashboard]
+      summary: Get a patient dashboard summary
+      responses:
+        "200":
+          description: Dashboard summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSummary"
+  /timeline:
+    get:
+      operationId: getTimeline
+      tags: [dashboard]
+      summary: Get the unified health timeline
+      parameters:
+        - $ref: "#/components/parameters/Limit"
+        - name: domain
+          in: query
+          schema:
+            type: string
+            enum: [all, conditions, medications, allergies, labs, vitals, immunizations]
+            default: all
+      responses:
+        "200":
+          description: Timeline entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TimelineEntry"
+  /medications:
+    get:
+      operationId: listMedications
+      tags: [records]
+      summary: List the patient's medications
+      responses:
+        "200":
+          description: Medications
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Medication"
+    post:
+      operationId: createMedication
+      tags: [records]
+      summary: Add a medication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MedicationInput"
+      responses:
+        "201":
+          description: Medication created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Medication"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+  /medications/{id}:
+    patch:
+      operationId: updateMedication
+      tags: [records]
+      summary: Update a medication
+      parameters:
+        - $ref: "#/components/parameters/RecordId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MedicationUpdate"
+      responses:
+        "200":
+          description: Medication updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Medication"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      operationId: deleteMedication
+      tags: [records]
+      summary: Remove a medication
+      parameters:
+        - $ref: "#/components/parameters/RecordId"
+      responses:
+        "204":
+          description: Medication removed
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /allergies:
+    get:
+      operationId: listAllergies
+      tags: [records]
+      summary: List the patient's allergies
+      responses:
+        "200":
+          description: Allergies
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Allergy"
+    post:
+      operationId: createAllergy
+      tags: [records]
+      summary: Add an allergy
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AllergyInput"
+      responses:
+        "201":
+          description: Allergy created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Allergy"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+  /conditions:
+    get:
+      operationId: listConditions
+      tags: [records]
+      summary: List the patient's conditions
+      responses:
+        "200":
+          description: Conditions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Condition"
+  /labs:
+    get:
+      operationId: listLabs
+      tags: [records]
+      summary: List recent lab results
+      responses:
+        "200":
+          description: Lab results
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LabResult"
+  /vitals:
+    get:
+      operationId: listVitals
+      tags: [records]
+      summary: List recent vitals
+      responses:
+        "200":
+          description: Vitals
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Vital"
 components:
+  parameters:
+    RecordId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+    Limit:
+      name: limit
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 25
+  responses:
+    BadRequest:
+      description: Invalid input
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    NotFound:
+      description: Record not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
   schemas:
     HealthStatus:
       type: object
@@ -33,4 +252,158 @@ components:
           type: string
       required:
         - status
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+      required: [error]
+    PatientProfile:
+      type: object
+      properties:
+        id: { type: string }
+        fullName: { type: string }
+        email: { type: string, format: email }
+        dateOfBirth: { type: ["string", "null"], format: date }
+        bloodType: { type: ["string", "null"] }
+        initials: { type: string }
+      required: [id, fullName, email, dateOfBirth, bloodType, initials]
+    DashboardSummary:
+      type: object
+      properties:
+        patient: { $ref: "#/components/schemas/PatientProfile" }
+        counts:
+          type: object
+          properties:
+            medications: { type: integer }
+            allergies: { type: integer }
+            conditions: { type: integer }
+            labs: { type: integer }
+            vitals: { type: integer }
+          required: [medications, allergies, conditions, labs, vitals]
+        alerts:
+          type: array
+          items:
+            $ref: "#/components/schemas/HealthAlert"
+        nextReminder:
+          type: ["string", "null"]
+      required: [patient, counts, alerts, nextReminder]
+    HealthAlert:
+      type: object
+      properties:
+        id: { type: string }
+        severity: { type: string, enum: [info, warning, critical] }
+        title: { type: string }
+        description: { type: string }
+        actionLabel: { type: string }
+      required: [id, severity, title, description, actionLabel]
+    TimelineEntry:
+      type: object
+      properties:
+        id: { type: string }
+        domain:
+          type: string
+          enum: [conditions, medications, allergies, labs, vitals, immunizations]
+        title: { type: string }
+        detail: { type: string }
+        date: { type: string, format: date-time }
+        source: { type: string }
+        status: { type: ["string", "null"] }
+      required: [id, domain, title, detail, date, source, status]
+    Medication:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        dosage: { type: ["string", "null"] }
+        frequency: { type: ["string", "null"] }
+        route: { type: ["string", "null"] }
+        prescriber: { type: ["string", "null"] }
+        startDate: { type: ["string", "null"], format: date }
+        endDate: { type: ["string", "null"], format: date }
+        isActive: { type: boolean }
+        notes: { type: ["string", "null"] }
+      required: [id, name, dosage, frequency, route, prescriber, startDate, endDate, isActive, notes]
+    MedicationInput:
+      type: object
+      properties:
+        name: { type: string, minLength: 1 }
+        dosage: { type: ["string", "null"] }
+        frequency: { type: ["string", "null"] }
+        route: { type: ["string", "null"] }
+        prescriber: { type: ["string", "null"] }
+        startDate: { type: ["string", "null"], format: date }
+        endDate: { type: ["string", "null"], format: date }
+        isActive: { type: boolean, default: true }
+        notes: { type: ["string", "null"] }
+      required: [name, isActive]
+    MedicationUpdate:
+      type: object
+      properties:
+        name: { type: string, minLength: 1 }
+        dosage: { type: ["string", "null"] }
+        frequency: { type: ["string", "null"] }
+        route: { type: ["string", "null"] }
+        prescriber: { type: ["string", "null"] }
+        startDate: { type: ["string", "null"], format: date }
+        endDate: { type: ["string", "null"], format: date }
+        isActive: { type: boolean }
+        notes: { type: ["string", "null"] }
+    Allergy:
+      type: object
+      properties:
+        id: { type: string }
+        substanceName: { type: string }
+        reaction: { type: ["string", "null"] }
+        severity:
+          type: string
+          enum: [mild, moderate, severe, life_threatening]
+        isActive: { type: boolean }
+      required: [id, substanceName, reaction, severity, isActive]
+    AllergyInput:
+      type: object
+      properties:
+        substanceName: { type: string, minLength: 1 }
+        reaction: { type: ["string", "null"] }
+        severity:
+          type: string
+          enum: [mild, moderate, severe, life_threatening]
+        isActive: { type: boolean, default: true }
+      required: [substanceName, severity, isActive]
+    Condition:
+      type: object
+      properties:
+        id: { type: string }
+        displayName: { type: string }
+        status: { type: string, enum: [active, resolved, chronic] }
+        onsetDate: { type: ["string", "null"], format: date }
+        notes: { type: ["string", "null"] }
+      required: [id, displayName, status, onsetDate, notes]
+    LabResult:
+      type: object
+      properties:
+        id: { type: string }
+        testName: { type: string }
+        value: { type: string }
+        unit: { type: ["string", "null"] }
+        referenceRange: { type: ["string", "null"] }
+        flag:
+          type: ["string", "null"]
+          enum: [normal, high, low, critical, null]
+        collectedAt: { type: string, format: date-time }
+      required: [id, testName, value, unit, referenceRange, flag, collectedAt]
+    Vital:
+      type: object
+      properties:
+        id: { type: string }
+        vitalType:
+          type: string
+          enum: [blood_pressure, heart_rate, glucose, weight, spo2, temperature, respiratory_rate]
+        value: { type: string }
+        unit: { type: ["string", "null"] }
+        recordedAt: { type: string, format: date-time }
+        source:
+          type: string
+          enum: [manual, wearable, device]
+      required: [id, vitalType, value, unit, recordedAt, source]
 

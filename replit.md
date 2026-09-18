@@ -1,6 +1,6 @@
-# [Project name]
+# My Health Record
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+A patient-controlled health record that brings medications, allergies, conditions, labs, vitals, and care reminders into one focused workspace.
 
 ## Run & Operate
 
@@ -22,23 +22,31 @@ _Replace the heading above with the project's name, and this line with one sente
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- `artifacts/health-record` — React/Vite patient-facing application and visual system.
+- `artifacts/api-server/src/routes/phr.ts` — PHR API routes and preview seed data.
+- `lib/api-spec/openapi.yaml` — source of truth for the generated API client and server validation schemas.
+- `lib/db/src/schema/phr.ts` — Drizzle schema for the initial clinical record domains.
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- The first milestone uses a seeded preview patient so the core workflow is immediately visible while the authenticated multi-patient model is added in the next phase.
+- OpenAPI is the contract boundary; generated React Query hooks and Zod schemas are used by the frontend and API server.
+- Date-only clinical fields are normalized back to `YYYY-MM-DD` at the API boundary to avoid timezone shifts.
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+- Responsive dashboard with a unified health timeline, record counts, reminders, and attention alerts.
+- Medication CRUD with active/past filtering and real API persistence.
+- Allergy, condition, lab, and vital record views with loading, empty, and error states.
+- Settings/profile surface and responsive navigation ready for the next auth and sharing milestones.
 
 ## User preferences
 
-_Populate as you build — explicit user instructions worth remembering across sessions._
+No additional preferences recorded.
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
+- Restart both managed workflows after API contract, database, or frontend changes so proxy routing and generated hooks stay in sync.
 
 ## Pointers
 

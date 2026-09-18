@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "My Health Record"
+description = "A patient-controlled personal health record that brings medications, allergies, labs, vitals, conditions, and care alerts into one calm, trustworthy workspace."
+version = "1.0.0"
+id = "artifacts/health-record"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 24354
+
+[services.development]
+run = "pnpm --filter @workspace/health-record run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/health-record", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/health-record/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "24354"
+BASE_PATH = "/"
